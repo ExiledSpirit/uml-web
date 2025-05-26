@@ -1,12 +1,11 @@
-import './App.css'
-import UseCaseRenderComponent from './components/UseCaseRender'
+import { Theme } from '@radix-ui/themes'
+import Home from '@/pages/page'
 
 function App() {
   return (
-    <>
-      <h1>Title</h1>
-      <UseCaseRenderComponent></UseCaseRenderComponent>
-    </>
+    <Theme className='h-screen w-screen' accentColor='green' appearance='dark' radius='none'>
+      <Home></Home>      
+    </Theme>
   )
 }
 
