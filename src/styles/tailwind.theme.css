@@ -1,0 +1,23 @@
+@import "tailwindcss";
+@tailwind utilities;
+
+@theme {
+  --color-background: #f2f0e3;
+  --color-foreground: #2e2e2e;
+  --color-link: #218a1e;
+  --font-bricolage: "Bricolage Grotesque", sans-serif;
+}
+
+/* Optional: Dark theme */
+@variant dark (&:where([data-theme=dark], [data-theme=dark] *)) {
+  --color-background: #1f1f1f;
+  --color-foreground: #d1cfc0;
+}
+
+@layer base {
+  html, body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: system-ui, sans-serif;
+  }
+}
