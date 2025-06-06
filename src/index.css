@@ -30,10 +30,6 @@ html, body {
   min-height: 100vh;
   line-height: 1.5;
   font-weight: 400;
-  color: var(--color-foreground);
-  background-color: var(--color-background);
-  font-family: var(--font-bricolage);
-
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;

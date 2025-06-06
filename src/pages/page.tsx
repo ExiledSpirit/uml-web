@@ -1,15 +1,15 @@
 import { Diagram } from "@/features/diagram";
 import NavbarComponent from "@/components/navbar";
-import { SidebarComponent } from "@/components/sidebar";
+import { Sidebar } from "@/components/sidebar/sidebar.component";
 
 export default function Home() {
   return (
     <div className="h-full w-full flex flex-col">
-      <NavbarComponent></NavbarComponent>
+      <NavbarComponent />
       <div className="h-full w-full flex flex-row">
-        <SidebarComponent></SidebarComponent>
-        <Diagram></Diagram>
+        <Sidebar />
+        <Diagram />
       </div>
     </div>
-  )
+  );
 }
