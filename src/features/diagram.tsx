@@ -1,67 +1,144 @@
-import { useMemo } from "react";
-import { useProjectStore } from "@/store/use-project.store";
-import { Background, BackgroundVariant, type Edge, MiniMap, type Node, ReactFlow,  } from "@xyflow/react";
-import "reactflow/dist/style.css";
+// src/features/diagram/Diagram.tsx
+import { useCallback, useMemo } from 'react';
+import { useProjectStore } from '@/store/use-project.store';
+import {
+  Background,
+  BackgroundVariant,
+  MiniMap,
+  ReactFlow,
+  ReactFlowProvider,
+  useReactFlow,
+  type Node,
+  type Edge,
+} from '@xyflow/react';
+import '@xyflow/react/dist/style.css';
 
-export function Diagram() {
-  const actors = useProjectStore((s) => s.actors);
-  const useCases = useProjectStore((s) => s.useCases);
-  const actorUseCaseLinks = useProjectStore((s) => s.actorUseCaseLinks);
-  const useCaseAssociations = useProjectStore((s) => s.useCaseAssociations);
+function DiagramCanvas() {
+  const {
+    actors,
+    useCases,
+    actorUseCaseLinks,
+    useCaseAssociations,
+    nodePositions,
+    addActor,
+    addUseCase,
+    setNodePosition,
+  } = useProjectStore();
 
-  const nodes: Node[] = useMemo(() => [
-    ...actors.map((a, i) => ({
+  // ✅ useReactFlow is now inside the provider
+  const rf = useReactFlow();
+
+  const nodes: Node[] = useMemo(() => {
+    const actorNodes: Node[] = actors.map((a, i) => ({
       id: a.id,
+      type: 'default',
+      position: nodePositions?.[a.id] ?? { x: 50, y: i * 120 },
       data: {
         label: (
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontSize: '2rem' }}>{a.icon === 'person' ? '👤' : '💻'}</div>
             <div>{a.name}</div>
           </div>
-        )
+        ),
       },
-      position: { x: 50, y: i * 120 },
       style: { background: 'transparent', border: 'none', boxShadow: 'none' },
-    })),
-    ...useCases.map((u, i) => ({
-      id: u.id,
-      data: { label: u.name },
-      position: { x: 400, y: i * 100 },
-      type: 'default'
-    })),
-  ], [actors, useCases]);
+    }));
 
-  const edges: Edge[] = useMemo(() => {
-    return [
-      ...actorUseCaseLinks.map((link) => ({
-        id: link.id,
-        source: link.actorId,
-        target: link.useCaseId,
-        style: { stroke: "#555" },
+    const useCaseNodes: Node[] = useCases.map((u, i) => ({
+      id: u.id,
+      type: 'default',
+      position: nodePositions?.[u.id] ?? { x: 400, y: i * 100 },
+      data: { label: u.name },
+    }));
+
+    return [...actorNodes, ...useCaseNodes];
+  }, [actors, useCases, nodePositions]);
+
+  const edges: Edge[] = useMemo(
+    () => [
+      ...actorUseCaseLinks.map((l) => ({
+        id: l.id,
+        source: l.actorId,
+        target: l.useCaseId,
+        style: { stroke: '#999' },
       })),
-      ...useCaseAssociations.map((assoc) => ({
-        id: assoc.id,
-        source: assoc.sourceId,
-        target: assoc.targetId,
-        label: assoc.type,
+      ...useCaseAssociations.map((a) => ({
+        id: a.id,
+        source: a.sourceId,
+        target: a.targetId,
+        label: a.type,
         style: {
           stroke:
-            assoc.type === "include"
-              ? "blue"
-              : assoc.type === "extend"
-              ? "orange"
-              : "black",
+            a.type === 'include' ? 'blue' :
+            a.type === 'extend' ? 'orange' :
+            a.type === 'generalization' ? 'purple' :
+            a.type === 'association' ? 'green' : 'black',
         },
       })),
-    ];
-  }, [actorUseCaseLinks, useCaseAssociations]);
+    ],
+    [actorUseCaseLinks, useCaseAssociations]
+  );
+
+  const onDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  }, []);
+
+  const uid = () =>
+    (crypto?.randomUUID?.() ??
+      Math.random().toString(36).slice(2) + Date.now().toString(36));
+
+  const onDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    const payload = e.dataTransfer.getData('application/uml-entity');
+    if (!payload) return;
+
+    const data = JSON.parse(payload) as {
+      entityType: 'ACTOR' | 'USE_CASE' | 'NOTE' | 'PACKAGE' | 'SUBJECT';
+      name?: string;
+    };
+
+    // ✅ new API: screenToFlowPosition
+    const pos = rf.screenToFlowPosition({ x: e.clientX, y: e.clientY });
+
+    if (data.entityType === 'ACTOR') {
+      const id = uid();
+      addActor({ id, name: data.name || 'Novo Ator', icon: 'person', description: '' } as any);
+      setNodePosition(id, pos);
+    } else if (data.entityType === 'USE_CASE') {
+      const id = uid();
+      addUseCase({ id, name: data.name || 'Novo Caso de Uso', description: '' } as any);
+      setNodePosition(id, pos);
+    }
+  }, [rf, addActor, addUseCase, setNodePosition]);
+
+  const onNodeDragStop = useCallback((_, node: Node) => {
+    setNodePosition(node.id, node.position);
+  }, [setNodePosition]);
 
   return (
-    <div className="text-foreground" style={{ width: "100%", height: "100%" }}>
-      <ReactFlow nodes={nodes} edges={edges} fitView>
-        <Background variant={BackgroundVariant.Dots} />
-        <MiniMap nodeStrokeWidth={2} />
-      </ReactFlow>
+    <ReactFlow
+      nodes={nodes}
+      edges={edges}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
+      onNodeDragStop={onNodeDragStop}
+      fitView
+      style={{ width: '100%', height: '100%' }}
+    >
+      <Background variant={BackgroundVariant.Dots} />
+      <MiniMap nodeStrokeWidth={3} />
+    </ReactFlow>
+  );
+}
+
+export default function Diagram() {
+  return (
+    <div style={{ width: '100%', height: '100%' }}>
+      {/* ✅ Provider wraps anything that uses useReactFlow */}
+      <ReactFlowProvider>
+        <DiagramCanvas />
+      </ReactFlowProvider>
     </div>
   );
 }

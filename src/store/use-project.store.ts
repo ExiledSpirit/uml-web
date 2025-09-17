@@ -16,12 +16,15 @@ export interface UseCaseAssociation {
   type: 'include' | 'extend' | 'generalization' | 'association' | 'default';
 }
 
+export interface NodePosition { x: number; y: number; }
+
 interface ProjectState {
   actors: IActor[];
   useCases: IUseCase[];
   actorUseCaseLinks: ActorUseCaseLink[];
   useCaseAssociations: UseCaseAssociation[];
   selectedEntityId: string | null;
+  nodePositions: Record<string, NodePosition>;
   addActor: (actor: IActor) => void;
   addUseCase: (useCase: IUseCase) => void;
   removeActor: (id: string) => void;
@@ -30,6 +33,7 @@ interface ProjectState {
   addUseCaseAssociation: (association: UseCaseAssociation) => void;
   focusElement: (id: string) => void;
   loadProject: (data: ProjectData) => void;
+  setNodePosition: (id: string, pos: NodePosition) => void;
 }
 
 const initialData = localStorageProjectAdapter.load();
@@ -40,6 +44,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   actorUseCaseLinks: initialData?.actorUseCaseLinks || [],
   useCaseAssociations: initialData?.useCaseAssociations || [],
   selectedEntityId: null,
+  nodePositions: initialData?.nodePositions || {},
 
   addActor: (actor) => {
     const newActors = [...get().actors, actor];
@@ -101,6 +106,12 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     set({ useCaseAssociations: newAssociations });
   },
 
+  setNodePosition: (id, pos) => {
+    const next = { ...get().nodePositions, [id]: pos };
+    localStorageProjectAdapter.save({ ...get(), nodePositions: next } as any);
+    set({ nodePositions: next });
+  },
+
   focusElement: (id) => set({ selectedEntityId: id }),
 
   loadProject: (data) => {
@@ -111,6 +122,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       actorUseCaseLinks: data.actorUseCaseLinks || [],
       useCaseAssociations: data.useCaseAssociations || [],
       selectedEntityId: null,
+      nodePositions: (data as any).nodePositions || {},
     });
   },
 }));

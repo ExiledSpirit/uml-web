@@ -13,6 +13,7 @@
     "@radix-ui/themes": "^3.2.1",
     "@tailwindcss/vite": "^4.1.7",
     "@xyflow/react": "^12.6.4",
+    "@reactflow/node-resizer": "2.2.14",
     "nanoid": "^5.1.5",
     "radix-ui": "^1.4.2",
     "react": "^19.1.0",

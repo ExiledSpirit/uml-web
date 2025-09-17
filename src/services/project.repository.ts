@@ -1,4 +1,4 @@
-import type { ActorUseCaseLink, UseCaseAssociation } from '@/store/use-project.store';
+import type { ActorUseCaseLink, NodePosition, UseCaseAssociation } from '@/store/use-project.store';
 import type { IActor, IUseCase } from '@/types/uml';
 
 export interface ProjectData {
@@ -6,6 +6,7 @@ export interface ProjectData {
   useCases: IUseCase[];
   actorUseCaseLinks?: ActorUseCaseLink[];
   useCaseAssociations?: UseCaseAssociation[];
+  nodePositions?: Record<string, NodePosition>;
 }
 
 export abstract class ProjectRepository {

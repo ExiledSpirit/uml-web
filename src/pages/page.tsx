@@ -6,10 +6,11 @@ export default function Home() {
   return (
     <div className="h-full w-full flex flex-col">
       <NavbarComponent />
-      <div className="h-full w-full flex flex-row">
+      {/* floating controls */}
+      <div className="h-full w-full flex pl-10 pr-10 pb-10 pt-20 absolute">
         <Sidebar />
-        <Diagram />
       </div>
+      <Diagram />
     </div>
   );
 }

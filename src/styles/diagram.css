@@ -1,0 +1,12 @@
+/* src/styles/diagram.css */
+.rf-handle-invisible {
+    width: 10px;
+    height: 10px;
+    background: transparent !important;
+    border: none !important;
+    opacity: 0;             /* invisible by default */
+  }
+  .rf-handle-invisible:hover {
+    opacity: 0.15;          /* a tiny hint on hover (optional) */
+  }
+  

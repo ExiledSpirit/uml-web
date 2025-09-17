@@ -3,7 +3,7 @@ import Home from '@/pages/page'
 
 function App() {
   return (
-    <Theme className='font-bricolage h-screen w-screen' accentColor='green' appearance='dark' radius='none'>
+    <Theme className='font-bricolage h-screen w-screen' accentColor='green' appearance='light' radius='none'>
       <Home></Home>      
     </Theme>
   )
