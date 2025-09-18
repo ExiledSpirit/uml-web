@@ -1,5 +1,6 @@
 import { Theme } from '@radix-ui/themes'
 import Home from '@/pages/page'
+import '@/styles/diagram.css';
 
 function App() {
   return (
