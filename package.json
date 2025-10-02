@@ -5,15 +5,15 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
-    "lint": "eslint .",
-    "preview": "vite preview"
+    "build": "vite build",
+    "preview": "vite preview --port 4173",
+    "lint": "eslint ."
   },
   "dependencies": {
     "@radix-ui/themes": "^3.2.1",
+    "@reactflow/node-resizer": "2.2.14",
     "@tailwindcss/vite": "^4.1.7",
     "@xyflow/react": "^12.6.4",
-    "@reactflow/node-resizer": "2.2.14",
     "nanoid": "^5.1.5",
     "radix-ui": "^1.4.2",
     "react": "^19.1.0",
