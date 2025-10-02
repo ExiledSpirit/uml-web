@@ -122,7 +122,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       actorUseCaseLinks: data.actorUseCaseLinks || [],
       useCaseAssociations: data.useCaseAssociations || [],
       selectedEntityId: null,
-      nodePositions: (data as any).nodePositions || {},
+      ...( (data as any).nodePositions ? { nodePositions: (data as any).nodePositions } : {} ),
     });
   },
 }));

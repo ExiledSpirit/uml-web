@@ -1,6 +1,6 @@
 /* src/styles/diagram.css */
 
-/* Hide default XYFlow node chrome for our custom types */
+/* remove default box around our nodes */
 .react-flow__node-actor,
 .react-flow__node-usecase {
   background: transparent !important;
@@ -8,40 +8,41 @@
   box-shadow: none !important;
 }
 
-/* Also remove selection/focus glow */
-.react-flow__node.selected,
-.react-flow__node:focus,
-.react-flow__node.using-selection {
-  box-shadow: none !important;
-  outline: none !important;
-}
-
-/* Invisible handles (still connectable) */
-.rf-handle-invisible {
-  width: 10px;
-  height: 10px;
-  background: transparent !important;
-  border: none !important;
-  opacity: 0;
-}
-.rf-handle-invisible:hover { opacity: 0.15; }
-
-/* Use case ellipse pill */
-.uc-node { pointer-events: auto; }
+/* use case ellipse visual */
 .uc-ellipse {
   display: inline-block;
   padding: 10px 16px;
   background: #fff;
   border: 1px solid #666;
-  border-radius: 9999px;          /* makes it an ellipse */
+  border-radius: 9999px;
   white-space: nowrap;
-  font: 14px/1.2 system-ui, sans-serif;
 }
 
-/* Actor stickman with no box */
-.actor-node {
-  text-align: center;
-  background: transparent;
-}
+/* actor style */
+.actor-node { text-align: center; }
 .actor-emoji { font-size: 2rem; line-height: 1; }
-.actor-name { margin-top: 4px; font: 14px/1.2 system-ui, sans-serif; }
+.actor-name { margin-top: 4px; }
+
+/* handles: hidden by default; appear on hover */
+.handle-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 9999px;
+  background: #666;
+  opacity: 0;
+  transition: opacity .12s ease;
+}
+.react-flow__node:hover .handle-dot {
+  opacity: 1;
+}
+
+/* src/styles/diagram.css */
+.handle-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 9999px;
+  background: #666;
+  opacity: 0;
+  transition: opacity .12s ease;
+}
+.react-flow__node:hover .handle-dot { opacity: 1; }

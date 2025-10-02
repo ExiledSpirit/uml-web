@@ -1,5 +1,5 @@
 // src/features/diagram/Diagram.tsx
-import { useMemo, useCallback } from 'react';
+import { useEffect, useMemo, useCallback } from 'react';
 import { useProjectStore } from '@/store/use-project.store';
 import {
   Background,
@@ -8,8 +8,16 @@ import {
   ReactFlow,
   ReactFlowProvider,
   useReactFlow,
+  useNodesState,
+  useEdgesState,
+  applyNodeChanges,
+  ConnectionMode,
+  ConnectionLineType,
+  MarkerType,
   type Node,
   type Edge,
+  type Connection,
+  type NodeChange,
 } from '@xyflow/react';
 import ActorNode from './diagram/nodes/actor-node';
 import UseCaseNode from './diagram/nodes/use-case-node';
@@ -25,20 +33,24 @@ function DiagramCanvas() {
     nodePositions,
     addActor,
     addUseCase,
+    addActorUseCaseLink,
     setNodePosition,
   } = useProjectStore();
 
-  const rf = useReactFlow(); // gives screenToFlowPosition
+  const rf = useReactFlow();
 
+  // 1) Local, live node/edge state for smooth dragging
+  const [nodes, setNodes, onNodesChange] = useNodesState([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+
+  // 2) Register custom node types
   const nodeTypes = useMemo(
-    () => ({
-      actor: ActorNode,
-      usecase: UseCaseNode,
-    }),
+    () => ({ actor: ActorNode, usecase: UseCaseNode }),
     []
   );
 
-  const nodes: Node[] = useMemo(() => {
+  // 3) Build nodes & edges from store once (or when store content changes)
+  useEffect(() => {
     const actorNodes: Node[] = actors.map((a, i) => ({
       id: a.id,
       type: 'actor',
@@ -47,7 +59,6 @@ function DiagramCanvas() {
       draggable: true,
       selectable: true,
     }));
-
     const useCaseNodes: Node[] = useCases.map((u, i) => ({
       id: u.id,
       type: 'usecase',
@@ -56,88 +67,118 @@ function DiagramCanvas() {
       draggable: true,
       selectable: true,
     }));
+    setNodes([...actorNodes, ...useCaseNodes]);
+  }, [actors, useCases, nodePositions, setNodes]);
 
-    return [...actorNodes, ...useCaseNodes];
-  }, [actors, useCases, nodePositions]);
+  useEffect(() => {
+    const actorEdges: Edge[] = actorUseCaseLinks.map((l) => ({
+      id: l.id,
+      source: l.actorId,
+      target: l.useCaseId,
+      type: 'straight',
+      markerEnd: { type: MarkerType.ArrowClosed, width: 14, height: 14 },
+      style: { stroke: '#333' },
+    }));
+    const assocEdges: Edge[] = useCaseAssociations.map((a) => ({
+      id: a.id,
+      source: a.sourceId,
+      target: a.targetId,
+      label: a.type,
+      type: 'straight',
+      markerEnd: { type: MarkerType.ArrowClosed, width: 14, height: 14 },
+      style: {
+        stroke:
+          a.type === 'include' ? 'blue' :
+          a.type === 'extend' ? 'orange' :
+          a.type === 'generalization' ? 'purple' :
+          a.type === 'association' ? 'green' : 'black',
+      },
+    }));
+    setEdges([...actorEdges, ...assocEdges]);
+  }, [actorUseCaseLinks, useCaseAssociations, setEdges]);
 
-  const edges: Edge[] = useMemo(
-    () => [
-      ...actorUseCaseLinks.map((l) => ({
-        id: l.id,
-        source: l.actorId,
-        target: l.useCaseId,
-        style: { stroke: '#999' },
-      })),
-      ...useCaseAssociations.map((a) => ({
-        id: a.id,
-        source: a.sourceId,
-        target: a.targetId,
-        label: a.type,
-        style: {
-          stroke:
-            a.type === 'include' ? 'blue' :
-            a.type === 'extend' ? 'orange' :
-            a.type === 'generalization' ? 'purple' :
-            a.type === 'association' ? 'green' : 'black',
-        },
-      })),
-    ],
-    [actorUseCaseLinks, useCaseAssociations]
-  );
+  // 4) Allow XYFlow to update positions live
+  const handleNodesChange = useCallback((changes: NodeChange[]) => {
+    setNodes((nds) => applyNodeChanges(changes, nds));
+  }, [setNodes]);
 
-  const onNodeDragStop = useCallback(
-    (_: any, node: Node) => {
-      setNodePosition(node.id, node.position);
-    },
-    [setNodePosition]
-  );
+  // 5) Persist position to store when drag ends
+  const onNodeDragStop = useCallback((_: any, node: Node) => {
+    setNodePosition(node.id, node.position);
+  }, [setNodePosition]);
 
-  // 🔑 REQUIRED for HTML5 DnD to drop on the canvas
+  // 6) HTML5 DnD from Sidebar → canvas
   const onDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
   }, []);
 
-  // Create ids safely without pulling extra libs
   const uid = () =>
     (crypto?.randomUUID?.() ??
       Math.random().toString(36).slice(2) + Date.now().toString(36));
 
-  // 🔑 Re-enable Sidebar → Diagram drop
-  const onDrop = useCallback(
-    (e: React.DragEvent) => {
-      e.preventDefault();
+  const onDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    const raw = e.dataTransfer.getData('application/uml-entity');
+    if (!raw) return;
 
-      const raw = e.dataTransfer.getData('application/uml-entity');
-      if (!raw) return;
+    const payload = JSON.parse(raw) as {
+      entityType: 'ACTOR' | 'USE_CASE' | 'NOTE' | 'PACKAGE' | 'SUBJECT';
+      name?: string;
+    };
 
-      const payload = JSON.parse(raw) as {
-        entityType: 'ACTOR' | 'USE_CASE' | 'NOTE' | 'PACKAGE' | 'SUBJECT';
-        name?: string;
-      };
+    const pos = rf.screenToFlowPosition({ x: e.clientX, y: e.clientY });
 
-      // NEW API: convert screen coords to flow coords
-      const pos = rf.screenToFlowPosition({ x: e.clientX, y: e.clientY });
+    if (payload.entityType === 'ACTOR') {
+      const id = uid();
+      addActor({ id, name: payload.name || 'Novo Ator', icon: 'person', description: '' } as any);
+      setNodePosition(id, pos);
+      // also inject to local nodes immediately for instant feedback
+      setNodes((nds) => [...nds, { id, type: 'actor', position: pos, data: { name: payload.name || 'Novo Ator', icon: 'person' } }]);
+    } else if (payload.entityType === 'USE_CASE') {
+      const id = uid();
+      addUseCase({ id, name: payload.name || 'Novo Caso de Uso', description: '' } as any);
+      setNodePosition(id, pos);
+      setNodes((nds) => [...nds, { id, type: 'usecase', position: pos, data: { name: payload.name || 'Novo Caso de Uso' } }]);
+    }
+  }, [rf, addActor, addUseCase, setNodePosition, setNodes]);
 
-      if (payload.entityType === 'ACTOR') {
-        const id = uid();
-        addActor({ id, name: payload.name || 'Novo Ator', icon: 'person', description: '' } as any);
-        setNodePosition(id, pos);
-      } else if (payload.entityType === 'USE_CASE') {
-        const id = uid();
-        addUseCase({ id, name: payload.name || 'Novo Caso de Uso', description: '' } as any);
-        setNodePosition(id, pos);
-      }
-      // NOTE/PACKAGE/SUBJECT → same idea once you add them to your domain
-    },
-    [rf, addActor, addUseCase, setNodePosition]
-  );
+  // 7) Only allow Actor → UseCase connections, and add to store
+  const isValidConnection = useCallback((c: Connection) => {
+    if (!c.source || !c.target) return false;
+    const src = rf.getNode(c.source);
+    const tgt = rf.getNode(c.target);
+    return src?.type === 'actor' && tgt?.type === 'usecase';
+  }, [rf]);
+
+  const onConnect = useCallback((c: Connection) => {
+    if (!c.source || !c.target) return;
+    const src = rf.getNode(c.source);
+    const tgt = rf.getNode(c.target);
+    if (src?.type === 'actor' && tgt?.type === 'usecase') {
+      addActorUseCaseLink({ id: uid(), actorId: c.source, useCaseId: c.target });
+    }
+  }, [rf, addActorUseCaseLink]);
+
+  // 8) straight edges + arrowhead + strict handles
+  const defaultEdgeOptions: Partial<Edge> = {
+    type: 'straight',
+    markerEnd: { type: MarkerType.ArrowClosed, width: 14, height: 14 },
+    style: { stroke: '#333' },
+  };
 
   return (
     <ReactFlow
       nodeTypes={nodeTypes}
       nodes={nodes}
       edges={edges}
+      defaultEdgeOptions={defaultEdgeOptions}
+      connectionLineType={ConnectionLineType.Straight}
+      connectionMode={ConnectionMode.Strict}
+      isValidConnection={isValidConnection}
+      onConnect={onConnect}
+      onNodesChange={handleNodesChange}
+      onEdgesChange={onEdgesChange}
       onNodeDragStop={onNodeDragStop}
       onDragOver={onDragOver}
       onDrop={onDrop}
