@@ -1,6 +1,7 @@
 import DiagramCanvas from "@/features/diagram";
 import NavbarComponent from "@/components/navbar";
 import { Sidebar } from "@/components/sidebar/sidebar.component";
+import RightInspector from "@/components/inspector/RightInspector";
 
 export default function Home() {
   return (
@@ -11,6 +12,8 @@ export default function Home() {
         <Sidebar />
       </div>
       <DiagramCanvas />
+      {/* Painel flutuante */}
+      <RightInspector />
     </div>
   );
 }

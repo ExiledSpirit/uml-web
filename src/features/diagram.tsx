@@ -38,6 +38,7 @@ function DiagramCanvas() {
   } = useProjectStore();
 
   const rf = useReactFlow();
+  const openInspector = useProjectStore(s => s.openInspector);
 
   // 1) Local, live node/edge state for smooth dragging
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
@@ -183,6 +184,10 @@ function DiagramCanvas() {
       onDragOver={onDragOver}
       onDrop={onDrop}
       fitView
+      onNodeClick={(_, node) => {
+        if (node.type === 'actor') openInspector({ kind: 'actor', id: node.id });
+        else if (node.type === 'usecase') openInspector({ kind: 'usecase', id: node.id });
+      }}
       proOptions={{ hideAttribution: true }}
       style={{ width: '100%', height: '100%' }}
     >

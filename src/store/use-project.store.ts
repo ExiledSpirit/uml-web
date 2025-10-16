@@ -2,6 +2,12 @@ import { create } from 'zustand';
 import type { IActor, IUseCase } from '@/types/uml';
 import type { ProjectData } from '@/services/project.repository';
 import { localStorageProjectAdapter } from '@/services/local-storage-project.adapter';
+import {
+  addPhase,
+  addAltFlow,
+  setAltReturn,
+  addAltFlowStep,
+} from "@/utils/usecase-helpers";
 
 export interface ActorUseCaseLink {
   id: string;
@@ -17,6 +23,11 @@ export interface UseCaseAssociation {
 }
 
 export interface NodePosition { x: number; y: number; }
+
+export type InspectorTarget =
+  | { kind: 'actor'; id: string }
+  | { kind: 'usecase'; id: string }
+  | null;
 
 interface ProjectState {
   actors: IActor[];
@@ -34,6 +45,27 @@ interface ProjectState {
   focusElement: (id: string) => void;
   loadProject: (data: ProjectData) => void;
   setNodePosition: (id: string, pos: NodePosition) => void;
+  inspector: InspectorTarget;
+  openInspector: (t: Exclude<InspectorTarget, null>) => void;
+  closeInspector: () => void;
+
+  // renomear
+  renameActor: (id: string, name: string) => void;
+  renameUseCase: (id: string, name: string) => void;
+
+  // === Cenários (se ainda não tiver) ===
+  addUseCasePhase: (useCaseId: string, text: string) => void;
+  editUseCasePhase: (useCaseId: string, index: number, text: string) => void;
+  removeUseCasePhase: (useCaseId: string, index: number) => void;
+
+  addAlternativeFlow: (useCaseId: string, name: string) => void;
+  renameAlternativeFlow: (useCaseId: string, altId: string, name: string) => void;
+  removeAlternativeFlow: (useCaseId: string, altId: string) => void;
+
+  addAlternativeFlowStep: (useCaseId: string, altId: string, text: string) => void;
+  editAlternativeFlowStep: (useCaseId: string, altId: string, index: number, text: string) => void;
+  removeAlternativeFlowStep: (useCaseId: string, altId: string, index: number) => void;// src/store/use-project.store.ts (inside ProjectState)
+  setAlternativeFlowReturn: (useCaseId: string, altId: string, returnPhaseId?: string) => void;
 }
 
 const initialData = localStorageProjectAdapter.load();
@@ -124,5 +156,143 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       selectedEntityId: null,
       ...( (data as any).nodePositions ? { nodePositions: (data as any).nodePositions } : {} ),
     });
+  },inspector: null,
+
+  openInspector: (t) => set({ inspector: t }),
+  closeInspector: () => set({ inspector: null }),
+
+  renameActor: (id, name) => {
+    const useCases = get().useCases;
+    const actors = get().actors.map(a => a.id === id ? { ...a, name } : a);
+    localStorageProjectAdapter.save({ ...get(), actors, useCases });
+    set({ actors });
   },
+
+  renameUseCase: (id, name) => {
+    const actors = get().actors;
+    const useCases = get().useCases.map(u => u.id === id ? { ...u, name } : u);
+    localStorageProjectAdapter.save({ ...get(), actors, useCases });
+    set({ useCases });
+  },
+
+  // ===== CENÁRIOS (copie somente se não tiver) =====
+  addUseCasePhase: (useCaseId, text) => set((s) => {
+    const useCases = addPhase(s.useCases, useCaseId, text);
+    localStorageProjectAdapter.save({ ...get(), useCases });
+    return { useCases };
+  }),
+
+  editUseCasePhase: (useCaseId, index, text) => set((s) => {
+    const useCases = s.useCases.map((u) => {
+      if (u.id !== useCaseId) return u;
+      const phases = [...(u.phases ?? [])];
+      phases[index] = text;
+      return { ...u, phases };
+    });
+    localStorageProjectAdapter.save({ ...get(), useCases });
+    return { useCases };
+  }),
+
+  removeUseCasePhase: (useCaseId, index) => set((s) => {
+    const useCases = s.useCases.map((u) => {
+      if (u.id !== useCaseId) return u;
+      const phases = [...(u.phases ?? [])];
+      phases.splice(index, 1);
+      return { ...u, phases };
+    });
+    localStorageProjectAdapter.save({ ...get(), useCases });
+    return { useCases };
+  }),
+
+  addAlternativeFlow: (useCaseId, name) => set((s) => {
+    const useCases = s.useCases.map((u) =>
+      u.id !== useCaseId
+        ? u
+        : {
+            ...u,
+            alternativeFlows: [
+              ...(u.alternativeFlows ?? []),
+              { id: crypto.randomUUID?.() ?? `af-${Date.now()}`, name, flows: [] },
+            ],
+          }
+    );
+    localStorageProjectAdapter.save({ ...get(), useCases });
+    return { useCases };
+  }),
+
+  renameAlternativeFlow: (useCaseId, altId, name) => set((s) => {
+    const useCases = s.useCases.map((u) => {
+      if (u.id !== useCaseId) return u;
+      const alternativeFlows = (u.alternativeFlows ?? []).map((af) =>
+        af.id === altId ? { ...af, name } : af
+      );
+      return { ...u, alternativeFlows };
+    });
+    localStorageProjectAdapter.save({ ...get(), useCases });
+    return { useCases };
+  }),
+
+  removeAlternativeFlow: (useCaseId, altId) => set((s) => {
+    const useCases = s.useCases.map((u) => {
+      if (u.id !== useCaseId) return u;
+      const alternativeFlows = (u.alternativeFlows ?? []).filter((af) => af.id !== altId);
+      return { ...u, alternativeFlows };
+    });
+    localStorageProjectAdapter.save({ ...get(), useCases });
+    return { useCases };
+  }),
+
+  addAlternativeFlowStep: (useCaseId, altId, text) => set((s) => {
+    const useCases = s.useCases.map((u) => {
+      if (u.id !== useCaseId) return u;
+      const alternativeFlows = (u.alternativeFlows ?? []).map((af) =>
+        af.id === altId ? { ...af, flows: [...af.flows, text] } : af
+      );
+      return { ...u, alternativeFlows };
+    });
+    localStorageProjectAdapter.save({ ...get(), useCases });
+    return { useCases };
+  }),
+
+  editAlternativeFlowStep: (useCaseId, altId, index, text) => set((s) => {
+    const useCases = s.useCases.map((u) => {
+      if (u.id !== useCaseId) return u;
+      const alternativeFlows = (u.alternativeFlows ?? []).map((af) => {
+        if (af.id !== altId) return af;
+        const flows = [...af.flows];
+        flows[index] = text;
+        return { ...af, flows };
+      });
+      return { ...u, alternativeFlows };
+    });
+    localStorageProjectAdapter.save({ ...get(), useCases });
+    return { useCases };
+  }),
+
+  removeAlternativeFlowStep: (useCaseId, altId, index) => set((s) => {
+    const useCases = s.useCases.map((u) => {
+      if (u.id !== useCaseId) return u;
+      const alternativeFlows = (u.alternativeFlows ?? []).map((af) => {
+        if (af.id !== altId) return af;
+        const flows = [...af.flows];
+        flows.splice(index, 1);
+        return { ...af, flows };
+      });
+      return { ...u, alternativeFlows };
+    });
+    localStorageProjectAdapter.save({ ...get(), useCases });
+    return { useCases };
+  }),
+  setAlternativeFlowReturn: (useCaseId, altId, returnPhaseId) =>
+    set((s) => {
+      const useCases = s.useCases.map((u) => {
+        if (u.id !== useCaseId) return u;
+        const alternativeFlows = (u.alternativeFlows ?? []).map((af) =>
+          af.id === altId ? { ...af, returnPhaseId } : af
+        );
+        return { ...u, alternativeFlows };
+      });
+      localStorageProjectAdapter.save({ ...get(), useCases });
+      return { useCases };
+    }),
 }));
