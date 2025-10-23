@@ -4,9 +4,6 @@ import type { ProjectData } from '@/services/project.repository';
 import { localStorageProjectAdapter } from '@/services/local-storage-project.adapter';
 import {
   addPhrase,
-  addAltFlow,
-  setAltReturn,
-  addAltFlowStep,
 } from "@/utils/usecase-helpers";
 
 export interface ActorUseCaseLink {
@@ -55,16 +52,16 @@ interface ProjectState {
 
   // === Cenários (se ainda não tiver) ===
   addUseCasePhrase: (useCaseId: string, text: string) => void;
-  editUseCasePhrase: (useCaseId: string, index: number, text: string) => void;
-  removeUseCasePhrase: (useCaseId: string, index: number) => void;
+  editUseCasePhrase: (useCaseId: string, phraseId: string, text: string) => void;
+  removeUseCasePhrase: (useCaseId: string, phraseId: string) => void;
 
   addAlternativeFlow: (useCaseId: string, name: string, kind: "alternative" | "exception", parentPhraseId: string, returnPhraseId?: string) => void;
   renameAlternativeFlow: (useCaseId: string, altId: string, name: string) => void;
   removeAlternativeFlow: (useCaseId: string, altId: string) => void;
 
-  addAlternativeFlowStep: (useCaseId: string, altId: string, text: string) => void;
-  editAlternativeFlowStep: (useCaseId: string, altId: string, index: number, text: string) => void;
-  removeAlternativeFlowStep: (useCaseId: string, altId: string, index: number) => void;// src/store/use-project.store.ts (inside ProjectState)
+  addAlternativeFlowPhrase: (useCaseId: string, altId: string, text: string) => void;
+  editAlternativeFlowPhrase: (useCaseId: string, altId: string, phraseId: string, text: string) => void;
+  removeAlternativeFlowPhrase: (useCaseId: string, altId: string, phraseId: string) => void;
   setAlternativeFlowReturn: (useCaseId: string, altId: string, returnPhraseId?: string) => void;
   setAlternativeFlowKind: (useCaseId: string, altId: string, kind: "alternative" | "exception") => void;
 }
@@ -177,28 +174,26 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   },
 
   // ===== CENÁRIOS (copie somente se não tiver) =====
-  addUseCasePhrase: (useCaseId, text) => set((s) => {
+  addUseCasePhrase: (useCaseId: string, text: string) => set((s) => {
     const useCases = addPhrase(s.useCases, useCaseId, text);
     localStorageProjectAdapter.save({ ...get(), useCases });
     return { useCases };
   }),
 
-  editUseCasePhrase: (useCaseId, index, text) => set((s) => {
+  editUseCasePhrase: (useCaseId: string, phraseId: string, text: string) => set((s) => {
     const useCases = s.useCases.map((u) => {
       if (u.id !== useCaseId) return u;
-      const phrases = [...(u.phrases ?? [])];
-      phrases[index] = text;
+      const phrases = (u.phrases ?? []).map((p) => p.id !== phraseId ? p : {...p, text});
       return { ...u, phrases };
     });
     localStorageProjectAdapter.save({ ...get(), useCases });
     return { useCases };
   }),
 
-  removeUseCasePhrase: (useCaseId, index) => set((s) => {
+  removeUseCasePhrase: (useCaseId: string, phraseId: string) => set((s) => {
     const useCases = s.useCases.map((u) => {
       if (u.id !== useCaseId) return u;
-      const phrases = [...(u.phrases ?? [])];
-      phrases.splice(index, 1);
+      const phrases = (u.phrases || []).filter((p) => p.id !== phraseId);
       return { ...u, phrases };
     });
     localStorageProjectAdapter.save({ ...get(), useCases });
@@ -243,11 +238,12 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     return { useCases };
   }),
 
-  addAlternativeFlowStep: (useCaseId, altId, text) => set((s) => {
+  addAlternativeFlowPhrase: (useCaseId, altId, text) => set((s) => {
     const useCases = s.useCases.map((u) => {
       if (u.id !== useCaseId) return u;
       const alternativeFlows = (u.alternativeFlows ?? []).map((af) =>
-        af.id === altId ? { ...af, flows: [...af.flows, text] } : af
+        af.id === altId ? { ...af, flows: [...(af.flows || []),
+          {id: crypto.randomUUID?.() ?? `afphrase-${Date.now()}`, text}] } : af
       );
       return { ...u, alternativeFlows };
     });
@@ -255,13 +251,14 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     return { useCases };
   }),
 
-  editAlternativeFlowStep: (useCaseId, altId, index, text) => set((s) => {
+  editAlternativeFlowPhrase: (useCaseId: string, altId: string, phraseId: string, text: string) => set((s) => {
     const useCases = s.useCases.map((u) => {
       if (u.id !== useCaseId) return u;
       const alternativeFlows = (u.alternativeFlows ?? []).map((af) => {
         if (af.id !== altId) return af;
-        const flows = [...af.flows];
-        flows[index] = text;
+        const flows = af.flows.map((f) => {
+          return f.id !== phraseId ? f : {...f, text};
+        });
         return { ...af, flows };
       });
       return { ...u, alternativeFlows };
@@ -270,13 +267,13 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     return { useCases };
   }),
 
-  removeAlternativeFlowStep: (useCaseId, altId, index) => set((s) => {
+  removeAlternativeFlowPhrase: (useCaseId: string, altId: string, phraseId: string) => set((s) => {
     const useCases = s.useCases.map((u) => {
       if (u.id !== useCaseId) return u;
       const alternativeFlows = (u.alternativeFlows ?? []).map((af) => {
         if (af.id !== altId) return af;
         const flows = [...af.flows];
-        flows.splice(index, 1);
+        flows.filter(f => f.id !== phraseId);
         return { ...af, flows };
       });
       return { ...u, alternativeFlows };

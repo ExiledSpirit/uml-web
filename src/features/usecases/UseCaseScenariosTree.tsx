@@ -18,9 +18,9 @@ export default function UseCaseScenariosTree({ useCaseId }: { useCaseId: string 
   const removeAlt = useProjectStore((s) => s.removeAlternativeFlow);
   const setAltReturn = useProjectStore((s) => s.setAlternativeFlowReturn);
 
-  const addAltStep = useProjectStore((s) => s.addAlternativeFlowStep);
-  const editAltStep = useProjectStore((s) => s.editAlternativeFlowStep);
-  const removeAltStep = useProjectStore((s) => s.removeAlternativeFlowStep);
+  const addAltPhrase = useProjectStore((s) => s.addAlternativeFlowPhrase);
+  const editAltPhrase = useProjectStore((s) => s.editAlternativeFlowPhrase);
+  const removeAltPhrase = useProjectStore((s) => s.removeAlternativeFlowPhrase);
   const setAlternativeFlowKind = useProjectStore((s) => s.setAlternativeFlowKind);
 
   const [newPhraseText, setNewPhraseText] = useState('');
@@ -35,7 +35,6 @@ export default function UseCaseScenariosTree({ useCaseId }: { useCaseId: string 
     });
     return map;
   }, [uc]);
-  console.log(altByParent)
 
   return (
     <div className="space-y-3 text-[13px]">
@@ -69,14 +68,14 @@ export default function UseCaseScenariosTree({ useCaseId }: { useCaseId: string 
                 <span className="text-gray-500 select-none">{idx + 1}.</span>
                 <EditableInline
                   value={p.text}
-                  onSave={(t) => editPhrase(uc.id, idx, t)}
+                  onSave={(t) => editPhrase(uc.id, p.id, t)}
                   className="flex-1"
                 />
                 <button
                   className="text-xs text-red-600 px-2 py-1 border rounded hover:bg-red-50"
                   onClick={(e) => {
                     e.preventDefault();
-                    removePhrase(uc.id, idx);
+                    removePhrase(uc.id, p.id);
                   }}
                   title="Remover frase"
                 >
@@ -104,9 +103,9 @@ export default function UseCaseScenariosTree({ useCaseId }: { useCaseId: string 
                     renameAlt={renameAlt}
                     removeAlt={removeAlt}
                     setAltReturn={setAltReturn}
-                    addAltStep={addAltStep}
-                    editAltStep={editAltStep}
-                    removeAltStep={removeAltStep}
+                    addAltPhrase={addAltPhrase}
+                    editAltPhrase={editAltPhrase}
+                    removeAltPhrase={removeAltPhrase}
                     setAlternativeFlowKind={setAlternativeFlowKind}
                   />
                 ))}
@@ -212,16 +211,16 @@ function AltCard(props: {
   removeAlt: (useCaseId: string, altId: string) => void;
   setAltReturn: (useCaseId: string, altId: string, returnPhraseId?: string) => void;
   setAlternativeFlowKind: (useCaseId: string, altId: string, kind: "alternative" | "exception") => void;
-  addAltStep: (useCaseId: string, altId: string, t: string) => void;
-  editAltStep: (useCaseId: string, altId: string, i: number, t: string) => void;
-  removeAltStep: (useCaseId: string, altId: string, i: number) => void;
+  addAltPhrase: (useCaseId: string, altId: string, t: string) => void;
+  editAltPhrase: (useCaseId: string, altId: string, phraseId: string, t: string) => void;
+  removeAltPhrase: (useCaseId: string, altId: string, phraseId: string) => void;
 }) {
   const { ucId, phrases, alt } = props;
   const [name, setName] = useState(alt.name);
   const [editing, setEditing] = useState(false);
   const [kind, setKind] = useState<Kind>(alt.kind ?? 'alternative');
   const [ret, setRet] = useState<string>(alt.returnPhraseId || '');
-  const [newStep, setNewStep] = useState('');
+  const [newPhrase, setNewPhrase] = useState('');
 
   // Apply name changes
   useEffect(() => {
@@ -287,19 +286,11 @@ function AltCard(props: {
       <ol className="list-decimal ml-6 mt-2 space-y-1">
         {alt.flows.map((f, idx) => (
           <li key={f.id} className="flex items-center gap-2">
-            <span className="flex-1 break-words">{f.text}</span>
-            <button
-              className="text-xs underline"
-              onClick={() => {
-                const t = prompt('Editar etapa', f.text);
-                if (t != null && t.trim()) props.editAltStep(ucId, alt.id, idx, t.trim());
-              }}
-            >
-              Editar
-            </button>
+            {idx + 1}.
+            <EditableInline className='w-full' onSave={(value: string) => props.editAltPhrase(ucId, alt.id, f.id, value)} value={f.text} />
             <button
               className="text-xs text-red-600 underline"
-              onClick={() => props.removeAltStep(ucId, alt.id, idx)}
+              onClick={() => props.removeAltPhrase(ucId, alt.id, f.id)}
             >
               Remover
             </button>
@@ -310,25 +301,25 @@ function AltCard(props: {
       <div className="flex items-center gap-2 mt-2">
         <input
           className="border px-2 py-1 rounded text-sm flex-1"
-          value={newStep}
-          onChange={(e) => setNewStep(e.target.value)}
+          value={newPhrase}
+          onChange={(e) => setNewPhrase(e.target.value)}
           placeholder="Nova etapa…"
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
-              const t = newStep.trim();
+              const t = newPhrase.trim();
               if (!t) return;
-              props.addAltStep(ucId, alt.id, t);
-              setNewStep('');
+              props.addAltPhrase(ucId, alt.id, t);
+              setNewPhrase('');
             }
           }}
         />
         <button
           className="px-2 py-1 border rounded text-xs"
           onClick={() => {
-            const t = newStep.trim();
+            const t = newPhrase.trim();
             if (!t) return;
-            props.addAltStep(ucId, alt.id, t);
-            setNewStep('');
+            props.addAltPhrase(ucId, alt.id, t);
+            setNewPhrase('');
           }}
         >
           + Etapa

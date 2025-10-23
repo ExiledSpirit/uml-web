@@ -52,8 +52,8 @@ export function setAltReturn(
   }));
 }
 
-/** Add a step inside an alt flow */
-export function addAltFlowStep(
+/** Add a phrase inside an alt flow */
+export function addAltFlowPhrase(
   useCases: IUseCase[],
   ucId: string,
   altId: string,

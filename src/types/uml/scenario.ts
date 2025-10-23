@@ -2,6 +2,6 @@ export interface IScenario {
   id: string;
   name: string;
   description: string;
-  step: number;
+  phrase: number;
   useCaseId: string;
 }
