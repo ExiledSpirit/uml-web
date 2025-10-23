@@ -13,13 +13,11 @@ export default function RightInspector() {
   if (!inspector) return null;
 
   const isActor = inspector.kind === 'actor';
-  console.log(inspector);
   const entity = isActor
     ? actors.find((a) => a.id === inspector.id)
     : useCases.find((u) => u.id === inspector.id);
 
   if (!entity) return null;
-  console.log(entity);
 
   return (
     <aside
