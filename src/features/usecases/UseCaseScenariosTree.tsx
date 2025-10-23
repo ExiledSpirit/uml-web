@@ -1,6 +1,7 @@
 // src/features/usecases/UseCaseScenariosTree.tsx
 import { useMemo, useState } from 'react';
 import { useProjectStore } from '@/store/use-project.store';
+import clsx from "clsx";
 
 type Kind = 'alternative' | 'exception';
 
@@ -42,7 +43,7 @@ export default function UseCaseScenariosTree({ useCaseId }: { useCaseId: string 
           className="border px-2 py-1 rounded text-sm flex-1"
           value={newPhaseText}
           onChange={(e) => setNewPhaseText(e.target.value)}
-          placeholder="Nova fase…"
+          placeholder="Nova frase…"
         />
         <button
           className="px-2 py-1 border rounded text-xs hover:bg-gray-50"
@@ -53,14 +54,14 @@ export default function UseCaseScenariosTree({ useCaseId }: { useCaseId: string 
             setNewPhaseText('');
           }}
         >
-          + Fase
+          + Frase
         </button>
       </div>
 
       {/* Phases list — collapsible */}
       <ol className="space-y-2">
         {phases.map((p, idx) => (
-          <li key={p.id} className="border rounded">
+          <li key={p.id} className="border rounded overflow-hidden">
             <details>
               <summary className="flex items-center gap-2 px-2 py-2 bg-gray-50 cursor-pointer">
                 <span className="text-gray-500 select-none">{idx + 1}.</span>
@@ -75,7 +76,7 @@ export default function UseCaseScenariosTree({ useCaseId }: { useCaseId: string 
                     e.preventDefault();
                     removePhase(uc.id, idx);
                   }}
-                  title="Remover fase"
+                  title="Remover frase"
                 >
                   Remover
                 </button>
@@ -127,16 +128,22 @@ function EditableInline({
 }: { value: string; onSave: (v: string) => void; className?: string }) {
   const [editing, setEditing] = useState(false);
   const [v, setV] = useState(value);
-  return editing ? (
+  return (
     <span className={`flex items-center gap-2 ${className || ''}`}>
-      <input
+      {(!editing ? <span
+      className={`truncate ${className || ''}`}
+      title={value}
+      onClick={() => setEditing(true)}
+    >
+      {value || <span className="text-gray-400 italic">Sem texto</span>}
+    </span> : <input
         className="border px-2 py-1 rounded text-sm w-full"
         value={v}
         onChange={(e) => setV(e.target.value)}
         autoFocus
-      />
+      />)}
       <button
-        className="text-xs px-2 py-1 border rounded hover:bg-gray-50"
+        className={clsx("text-xs px-2 py-1 border rounded hover:bg-gray-50", editing ? "visible" : "invisible")}
         onClick={() => {
           const t = v.trim();
           if (!t) return setEditing(false);
@@ -146,17 +153,9 @@ function EditableInline({
       >
         OK
       </button>
-      <button className="text-xs px-2 py-1 border rounded" onClick={() => { setV(value); setEditing(false); }}>
+      <button className={clsx("text-xs px-2 py-1 border rounded", editing ? "visible" : "invisible")} onClick={() => { setV(value); setEditing(false); }}>
         Cancel
       </button>
-    </span>
-  ) : (
-    <span
-      className={`truncate ${className || ''}`}
-      title={value}
-      onClick={() => setEditing(true)}
-    >
-      {value || <span className="text-gray-400 italic">Sem texto</span>}
     </span>
   );
 }

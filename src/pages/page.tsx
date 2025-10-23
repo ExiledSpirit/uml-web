@@ -8,12 +8,12 @@ export default function Home() {
     <div className="h-full w-full flex flex-col">
       <NavbarComponent />
       {/* floating controls */}
-      <div className="h-full w-full flex pl-10 pr-10 pb-10 pt-20 absolute">
+      <div className="h-full w-full flex justify-between pl-10 pr-10 pb-10 pt-20 absolute">
         <Sidebar />
+        {/* Painel flutuante */}
+        <RightInspector />
       </div>
       <DiagramCanvas />
-      {/* Painel flutuante */}
-      <RightInspector />
     </div>
   );
 }
