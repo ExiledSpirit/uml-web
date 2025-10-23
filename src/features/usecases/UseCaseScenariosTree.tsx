@@ -129,19 +129,20 @@ function EditableInline({
   const [editing, setEditing] = useState(false);
   const [v, setV] = useState(value);
   return (
-    <span className={`flex items-center gap-2 ${className || ''}`}>
+    <div className={`flex truncate items-center gap-2 ${className || ''}`}>
       {(!editing ? <span
-      className={`truncate ${className || ''}`}
-      title={value}
-      onClick={() => setEditing(true)}
-    >
-      {value || <span className="text-gray-400 italic">Sem texto</span>}
-    </span> : <input
-        className="border px-2 py-1 rounded text-sm w-full"
-        value={v}
-        onChange={(e) => setV(e.target.value)}
-        autoFocus
-      />)}
+        className={`truncate max-w-min w-min ${className || ''}`}
+        title={value}
+        onClick={() => setEditing(true)}
+      >
+        {value || <span className="text-gray-400 italic">Sem texto</span>}
+      </span> : <input
+          className="border px-2 py-1 rounded text-sm"
+          value={v}
+          onChange={(e) => setV(e.target.value)}
+          autoFocus
+        />)
+      }
       <button
         className={clsx("text-xs px-2 py-1 border rounded hover:bg-gray-50", editing ? "visible" : "invisible")}
         onClick={() => {
@@ -156,7 +157,7 @@ function EditableInline({
       <button className={clsx("text-xs px-2 py-1 border rounded", editing ? "visible" : "invisible")} onClick={() => { setV(value); setEditing(false); }}>
         Cancel
       </button>
-    </span>
+    </div>
   );
 }
 
