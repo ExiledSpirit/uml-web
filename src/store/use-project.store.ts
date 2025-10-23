@@ -3,7 +3,7 @@ import type { IActor, IUseCase } from '@/types/uml';
 import type { ProjectData } from '@/services/project.repository';
 import { localStorageProjectAdapter } from '@/services/local-storage-project.adapter';
 import {
-  addPhase,
+  addPhrase,
   addAltFlow,
   setAltReturn,
   addAltFlowStep,
@@ -54,9 +54,9 @@ interface ProjectState {
   renameUseCase: (id: string, name: string) => void;
 
   // === Cenários (se ainda não tiver) ===
-  addUseCasePhase: (useCaseId: string, text: string) => void;
-  editUseCasePhase: (useCaseId: string, index: number, text: string) => void;
-  removeUseCasePhase: (useCaseId: string, index: number) => void;
+  addUseCasePhrase: (useCaseId: string, text: string) => void;
+  editUseCasePhrase: (useCaseId: string, index: number, text: string) => void;
+  removeUseCasePhrase: (useCaseId: string, index: number) => void;
 
   addAlternativeFlow: (useCaseId: string, name: string) => void;
   renameAlternativeFlow: (useCaseId: string, altId: string, name: string) => void;
@@ -65,7 +65,7 @@ interface ProjectState {
   addAlternativeFlowStep: (useCaseId: string, altId: string, text: string) => void;
   editAlternativeFlowStep: (useCaseId: string, altId: string, index: number, text: string) => void;
   removeAlternativeFlowStep: (useCaseId: string, altId: string, index: number) => void;// src/store/use-project.store.ts (inside ProjectState)
-  setAlternativeFlowReturn: (useCaseId: string, altId: string, returnPhaseId?: string) => void;
+  setAlternativeFlowReturn: (useCaseId: string, altId: string, returnPhraseId?: string) => void;
 }
 
 const initialData = localStorageProjectAdapter.load();
@@ -176,29 +176,29 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   },
 
   // ===== CENÁRIOS (copie somente se não tiver) =====
-  addUseCasePhase: (useCaseId, text) => set((s) => {
-    const useCases = addPhase(s.useCases, useCaseId, text);
+  addUseCasePhrase: (useCaseId, text) => set((s) => {
+    const useCases = addPhrase(s.useCases, useCaseId, text);
     localStorageProjectAdapter.save({ ...get(), useCases });
     return { useCases };
   }),
 
-  editUseCasePhase: (useCaseId, index, text) => set((s) => {
+  editUseCasePhrase: (useCaseId, index, text) => set((s) => {
     const useCases = s.useCases.map((u) => {
       if (u.id !== useCaseId) return u;
-      const phases = [...(u.phases ?? [])];
-      phases[index] = text;
-      return { ...u, phases };
+      const phrases = [...(u.phrases ?? [])];
+      phrases[index] = text;
+      return { ...u, phrases };
     });
     localStorageProjectAdapter.save({ ...get(), useCases });
     return { useCases };
   }),
 
-  removeUseCasePhase: (useCaseId, index) => set((s) => {
+  removeUseCasePhrase: (useCaseId, index) => set((s) => {
     const useCases = s.useCases.map((u) => {
       if (u.id !== useCaseId) return u;
-      const phases = [...(u.phases ?? [])];
-      phases.splice(index, 1);
-      return { ...u, phases };
+      const phrases = [...(u.phrases ?? [])];
+      phrases.splice(index, 1);
+      return { ...u, phrases };
     });
     localStorageProjectAdapter.save({ ...get(), useCases });
     return { useCases };
@@ -283,12 +283,12 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     localStorageProjectAdapter.save({ ...get(), useCases });
     return { useCases };
   }),
-  setAlternativeFlowReturn: (useCaseId, altId, returnPhaseId) =>
+  setAlternativeFlowReturn: (useCaseId, altId, returnPhraseId) =>
     set((s) => {
       const useCases = s.useCases.map((u) => {
         if (u.id !== useCaseId) return u;
         const alternativeFlows = (u.alternativeFlows ?? []).map((af) =>
-          af.id === altId ? { ...af, returnPhaseId } : af
+          af.id === altId ? { ...af, returnPhraseId } : af
         );
         return { ...u, alternativeFlows };
       });

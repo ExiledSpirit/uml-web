@@ -16,14 +16,14 @@ const XML_NS_EXT = 'urn:umlweb:v1';
 const esc = (s: string) =>
   (s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
-// Ensure phases have ids
-function normalizePhases(uc: IUseCase) {
-  if (!uc.phases || !Array.isArray(uc.phases)) return [];
-  if (uc.phases.length && typeof (uc.phases[0] as any) === 'string') {
+// Ensure phrases have ids
+function normalizePhrases(uc: IUseCase) {
+  if (!uc.phrases || !Array.isArray(uc.phrases)) return [];
+  if (uc.phrases.length && typeof (uc.phrases[0] as any) === 'string') {
     // @ts-ignore legacy: string[]
-    return (uc.phases as string[]).map((t, i) => ({ id: `P${i + 1}`, text: t }));
+    return (uc.phrases as string[]).map((t, i) => ({ id: `P${i + 1}`, text: t }));
   }
-  return uc.phases as { id: string; text: string }[];
+  return uc.phrases as { id: string; text: string }[];
 }
 
 // Ensure alt flows are well-formed with ids in inner flows
@@ -33,8 +33,8 @@ function normalizeAltFlows(uc: IUseCase) {
     id: af.id || `AF${j + 1}`,
     name: af.name ?? '',
     kind: af.kind,
-    parentPhaseId: af.parentPhaseId ?? '',
-    returnPhaseId: af.returnPhaseId,
+    parentPhraseId: af.parentPhraseId ?? '',
+    returnPhraseId: af.returnPhraseId,
     flows: (af.flows ?? []).map((f, k) => ({
       id: f.id || `AF${j + 1}-${k + 1}`,
       text: f.text ?? '',
@@ -45,19 +45,19 @@ function normalizeAltFlows(uc: IUseCase) {
 export function exportProjectToXml(input: ExportProjectInput): string {
   const ucXml = input.useCases
     .map((uc, ucIdx) => {
-      const phases = normalizePhases(uc);
+      const phrases = normalizePhrases(uc);
       const alts = normalizeAltFlows(uc);
 
-      const main = phases
-        .map((p) => `      <phase id="${esc(p.id)}">${esc(p.text)}</phase>`)
+      const main = phrases
+        .map((p) => `      <phrase id="${esc(p.id)}">${esc(p.text)}</phrase>`)
         .join('\n');
 
       const altBlocks = alts
         .map((af, afi) => {
           const attrs = [
             `id="${esc(af.id)}"`,
-            !input.compatOnly && af.parentPhaseId ? `ext:parent_phase_id="${esc(af.parentPhaseId)}"` : '',
-            !input.compatOnly && af.returnPhaseId ? `ext:return_phase_id="${esc(af.returnPhaseId)}"` : '',
+            !input.compatOnly && af.parentPhraseId ? `ext:parent_phrase_id="${esc(af.parentPhraseId)}"` : '',
+            !input.compatOnly && af.returnPhraseId ? `ext:return_phrase_id="${esc(af.returnPhraseId)}"` : '',
             !input.compatOnly && af.kind ? `ext:kind="${esc(af.kind)}"` : '',
           ]
             .filter(Boolean)

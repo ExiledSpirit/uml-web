@@ -9,9 +9,9 @@ export default function UseCaseScenariosTree({ useCaseId }: { useCaseId: string 
   const uc = useProjectStore((s) => s.useCases.find((u) => u.id === useCaseId));
 
   // Actions
-  const addPhase = useProjectStore((s) => s.addUseCasePhase);
-  const editPhase = useProjectStore((s) => s.editUseCasePhase);
-  const removePhase = useProjectStore((s) => s.removeUseCasePhase);
+  const addPhrase = useProjectStore((s) => s.addUseCasePhrase);
+  const editPhrase = useProjectStore((s) => s.editUseCasePhrase);
+  const removePhrase = useProjectStore((s) => s.removeUseCasePhrase);
 
   const addAlt = useProjectStore((s) => s.addAlternativeFlow);
   const renameAlt = useProjectStore((s) => s.renameAlternativeFlow);
@@ -22,59 +22,59 @@ export default function UseCaseScenariosTree({ useCaseId }: { useCaseId: string 
   const editAltStep = useProjectStore((s) => s.editAlternativeFlowStep);
   const removeAltStep = useProjectStore((s) => s.removeAlternativeFlowStep);
 
-  const [newPhaseText, setNewPhaseText] = useState('');
+  const [newPhraseText, setNewPhraseText] = useState('');
 
   if (!uc) return null;
 
-  const phases = uc.phases ?? [];
+  const phrases = uc.phrases ?? [];
   const altByParent = useMemo(() => {
     const map: Record<string, NonNullable<typeof uc>['alternativeFlows']> = {};
     (uc.alternativeFlows ?? []).forEach((af) => {
-      (map[af.parentPhaseId] ||= []).push(af);
+      (map[af.parentPhraseId] ||= []).push(af);
     });
     return map;
   }, [uc]);
 
   return (
     <div className="space-y-3 text-[13px]">
-      {/* Add phase row */}
+      {/* Add phrase row */}
       <div className="flex items-center gap-2">
         <input
           className="border px-2 py-1 rounded text-sm flex-1"
-          value={newPhaseText}
-          onChange={(e) => setNewPhaseText(e.target.value)}
+          value={newPhraseText}
+          onChange={(e) => setNewPhraseText(e.target.value)}
           placeholder="Nova frase…"
         />
         <button
           className="px-2 py-1 border rounded text-xs hover:bg-gray-50"
           onClick={() => {
-            const t = newPhaseText.trim();
+            const t = newPhraseText.trim();
             if (!t) return;
-            addPhase(uc.id, t);
-            setNewPhaseText('');
+            addPhrase(uc.id, t);
+            setNewPhraseText('');
           }}
         >
           + Frase
         </button>
       </div>
 
-      {/* Phases list — collapsible */}
+      {/* Phrases list — collapsible */}
       <ol className="space-y-2">
-        {phases.map((p, idx) => (
+        {phrases.map((p, idx) => (
           <li key={p.id} className="border rounded overflow-hidden">
             <details>
               <summary className="flex items-center gap-2 px-2 py-2 bg-gray-50 cursor-pointer">
                 <span className="text-gray-500 select-none">{idx + 1}.</span>
                 <EditableInline
                   value={p.text}
-                  onSave={(t) => editPhase(uc.id, idx, t)}
+                  onSave={(t) => editPhrase(uc.id, idx, t)}
                   className="flex-1"
                 />
                 <button
                   className="text-xs text-red-600 px-2 py-1 border rounded hover:bg-red-50"
                   onClick={(e) => {
                     e.preventDefault();
-                    removePhase(uc.id, idx);
+                    removePhrase(uc.id, idx);
                   }}
                   title="Remover frase"
                 >
@@ -97,7 +97,7 @@ export default function UseCaseScenariosTree({ useCaseId }: { useCaseId: string 
                   <AltCard
                     key={af.id}
                     ucId={uc.id}
-                    phases={phases}
+                    phrases={phrases}
                     alt={af}
                     renameAlt={renameAlt}
                     removeAlt={removeAlt}
@@ -196,27 +196,27 @@ function AddAltInline({ onCreate }: { onCreate: (name: string) => void }) {
 
 function AltCard(props: {
   ucId: string;
-  phases: { id: string; text: string }[];
+  phrases: { id: string; text: string }[];
   alt: {
     id: string;
     name: string;
     kind?: Kind;
-    parentPhaseId: string;
-    returnPhaseId?: string;
+    parentPhraseId: string;
+    returnPhraseId?: string;
     flows: { id: string; text: string }[];
   };
   renameAlt: (useCaseId: string, altId: string, name: string) => void;
   removeAlt: (useCaseId: string, altId: string) => void;
-  setAltReturn: (useCaseId: string, altId: string, returnPhaseId?: string) => void;
+  setAltReturn: (useCaseId: string, altId: string, returnPhraseId?: string) => void;
   addAltStep: (useCaseId: string, altId: string, t: string) => void;
   editAltStep: (useCaseId: string, altId: string, i: number, t: string) => void;
   removeAltStep: (useCaseId: string, altId: string, i: number) => void;
 }) {
-  const { ucId, phases, alt } = props;
+  const { ucId, phrases, alt } = props;
   const [name, setName] = useState(alt.name);
   const [editing, setEditing] = useState(false);
   const [kind, setKind] = useState<Kind>(alt.kind ?? 'alternative');
-  const [ret, setRet] = useState<string>(alt.returnPhaseId || '');
+  const [ret, setRet] = useState<string>(alt.returnPhraseId || '');
   const [newStep, setNewStep] = useState('');
 
   return (
@@ -278,7 +278,7 @@ function AltCard(props: {
           }}
         >
           <option value="">(termina)</option>
-          {phases.map((p, i) => (
+          {phrases.map((p, i) => (
             <option key={p.id} value={p.id}>
               {i + 1}. {p.text.slice(0, 50)}
             </option>

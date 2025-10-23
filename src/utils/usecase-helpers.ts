@@ -12,11 +12,11 @@ export function updateUseCase(
   return useCases.map((u) => (u.id === id ? updater(u) : u));
 }
 
-/** Add a main flow phase */
-export function addPhase(useCases: IUseCase[], ucId: string, text: string): IUseCase[] {
+/** Add a main flow phrase */
+export function addPhrase(useCases: IUseCase[], ucId: string, text: string): IUseCase[] {
   return updateUseCase(useCases, ucId, (u) => ({
     ...u,
-    phases: [...(u.phases ?? []), { id: uid(), text }],
+    phrases: [...(u.phrases ?? []), { id: uid(), text }],
   }));
 }
 
@@ -24,7 +24,7 @@ export function addPhase(useCases: IUseCase[], ucId: string, text: string): IUse
 export function addAltFlow(
   useCases: IUseCase[],
   ucId: string,
-  parentPhaseId: string,
+  parentPhraseId: string,
   name: string,
   kind: "alternative" | "exception" = "alternative"
 ): IUseCase[] {
@@ -32,22 +32,22 @@ export function addAltFlow(
     ...u,
     alternativeFlows: [
       ...(u.alternativeFlows ?? []),
-      { id: uid(), name, kind, parentPhaseId, flows: [] },
+      { id: uid(), name, kind, parentPhraseId, flows: [] },
     ],
   }));
 }
 
-/** Change the return phase of an alternative flow */
+/** Change the return phrase of an alternative flow */
 export function setAltReturn(
   useCases: IUseCase[],
   ucId: string,
   altId: string,
-  returnPhaseId?: string
+  returnPhraseId?: string
 ): IUseCase[] {
   return updateUseCase(useCases, ucId, (u) => ({
     ...u,
     alternativeFlows: (u.alternativeFlows ?? []).map((af) =>
-      af.id === altId ? { ...af, returnPhaseId } : af
+      af.id === altId ? { ...af, returnPhraseId } : af
     ),
   }));
 }

@@ -4,15 +4,15 @@ export interface IUseCase {
   description: string;
 
   // Main flow (keep ids stable once created)
-  phases?: { id: string; text: string }[];
+  phrases?: { id: string; text: string }[];
 
-  // Alternative flows (branching from a main phase)
+  // Alternative flows (branching from a main phrase)
   alternativeFlows?: {
     id: string;
     name: string; // alt flow title text
     kind?: 'alternative' | 'exception';
-    parentPhaseId: string;     // ext:parent_phase_id
-    returnPhaseId?: string;    // ext:return_phase_id
+    parentPhraseId: string;     // ext:parent_phrase_id
+    returnPhraseId?: string;    // ext:return_phrase_id
     flows: { id: string; text: string }[];
   }[];
 }

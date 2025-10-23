@@ -34,8 +34,8 @@ export function importProjectFromXml(xml: string): ImportedProject {
     const id = ucEl.getAttribute('id') || `UC${i + 1}`;
     const name = textOnly(ucEl);
 
-    // main phases
-    const phases = byTag(ucEl, 'phase').map((p, j) => ({
+    // main phrases
+    const phrases = byTag(ucEl, 'phrase').map((p, j) => ({
       id: p.getAttribute('id') || `P${j + 1}`,
       text: textOnly(p),
     }));
@@ -43,8 +43,8 @@ export function importProjectFromXml(xml: string): ImportedProject {
     // alternative flows
     const altEls = byTag(ucEl, 'alternative_flow');
     const alternativeFlows = altEls.map((afEl, k) => {
-      const extParent = afEl.getAttributeNS(XML_NS_EXT, 'parent_phase_id') || '';
-      const extReturn = afEl.getAttributeNS(XML_NS_EXT, 'return_phase_id') || undefined;
+      const extParent = afEl.getAttributeNS(XML_NS_EXT, 'parent_phrase_id') || '';
+      const extReturn = afEl.getAttributeNS(XML_NS_EXT, 'return_phrase_id') || undefined;
       const extKind = (afEl.getAttributeNS(XML_NS_EXT, 'kind') as 'alternative' | 'exception') || undefined;
 
       const flows = byTag(afEl, 'flow').map((f, m) => ({
@@ -56,13 +56,13 @@ export function importProjectFromXml(xml: string): ImportedProject {
         id: afEl.getAttribute('id') || `AF${k + 1}`,
         name: textOnly(afEl),
         kind: extKind,
-        parentPhaseId: extParent || phases[0]?.id || '', // fallback if missing in legacy XML
-        returnPhaseId: extReturn,
+        parentPhraseId: extParent || phrases[0]?.id || '', // fallback if missing in legacy XML
+        returnPhraseId: extReturn,
         flows,
       };
     });
 
-    return { id, name, description: '', phases, alternativeFlows };
+    return { id, name, description: '', phrases, alternativeFlows };
   });
 
   // --- ext:actors (optional) ---
