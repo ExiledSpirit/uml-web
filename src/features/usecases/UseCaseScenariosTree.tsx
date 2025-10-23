@@ -83,8 +83,10 @@ export default function UseCaseScenariosTree({ useCaseId }: { useCaseId: string 
                 </button>
               </summary>
 
+                
               {/* Alt flows */}
               <div className="p-2 space-y-2">
+              <span className='text-lg bold text-gray-600 mt-1'>Fluxos Alternativos:</span>
                 <AddAltInline
                   onCreate={(name) => {
                     const n = name.trim();
@@ -239,42 +241,43 @@ function AltCard(props: {
 
   return (
     <div className="border rounded p-2">
-      <div className="flex flex-wrap items-center gap-2">
-        <EditableInline onSave={(e: string) => setName(e)} value={name} />
+      <div className="flex items-center gap-2 flex-row border-b-2 border-b-gray-300">
+        <div className='flex flex-wrap flex-col'>
+          <EditableInline onSave={(e: string) => setName(e)} value={name} />
 
-        <span className="text-gray-300 mx-1">|</span>
+          <div className='flex flex-row flex-wrap items-center gap-2'>
+            <label className="text-[11px] text-gray-600">Tipo</label>
+            <select
+              className="border px-2 py-1 rounded text-xs"
+              value={kind}
+              onChange={(e) => {
+                setKind(e.target.value as Kind);
+              }}
+              // TODO: persist kind (add a store action if you want to save it)
+            >
+              <option value="alternative">Alternative</option>
+              <option value="exception">Exception</option>
+            </select>
 
-        <label className="text-[11px] text-gray-600">Tipo</label>
-        <select
-          className="border px-2 py-1 rounded text-xs"
-          value={kind}
-          onChange={(e) => {
-            setKind(e.target.value as Kind);
-          }}
-          // TODO: persist kind (add a store action if you want to save it)
-        >
-          <option value="alternative">Alternative</option>
-          <option value="exception">Exception</option>
-        </select>
+            <span className="text-gray-300 mx-1">|</span>
 
-        <span className="text-gray-300 mx-1">|</span>
-
-        <label className="text-[11px] text-gray-600">Retorna em</label>
-        <select
-          className="border px-2 py-1 rounded text-xs"
-          value={ret}
-          onChange={(e) => {
-            setRet(e.target.value);
-          }}
-        >
-          <option value="">(termina)</option>
-          {phrases.map((p, i) => (
-            <option key={p.id} value={p.id}>
-              {i + 1}. {p.text.slice(0, 50)}
-            </option>
-          ))}
-        </select>
-
+            <label className="text-[11px] text-gray-600">Retorna em</label>
+            <select
+              className="border px-2 py-1 rounded text-xs"
+              value={ret}
+              onChange={(e) => {
+                setRet(e.target.value);
+              }}
+            >
+              <option value="">(termina)</option>
+              {phrases.map((p, i) => (
+                <option key={p.id} value={p.id}>
+                  {i + 1}. {p.text.slice(0, 50)}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
         <button
           className="ml-auto text-xs px-2 py-1 border rounded text-red-600 hover:bg-red-50"
           onClick={() => props.removeAlt(ucId, alt.id)}
