@@ -58,7 +58,7 @@ interface ProjectState {
   editUseCasePhrase: (useCaseId: string, index: number, text: string) => void;
   removeUseCasePhrase: (useCaseId: string, index: number) => void;
 
-  addAlternativeFlow: (useCaseId: string, name: string) => void;
+  addAlternativeFlow: (useCaseId: string, name: string, kind: "alternative" | "exception", parentPhraseId: string, returnPhraseId?: string) => void;
   renameAlternativeFlow: (useCaseId: string, altId: string, name: string) => void;
   removeAlternativeFlow: (useCaseId: string, altId: string) => void;
 
@@ -66,6 +66,7 @@ interface ProjectState {
   editAlternativeFlowStep: (useCaseId: string, altId: string, index: number, text: string) => void;
   removeAlternativeFlowStep: (useCaseId: string, altId: string, index: number) => void;// src/store/use-project.store.ts (inside ProjectState)
   setAlternativeFlowReturn: (useCaseId: string, altId: string, returnPhraseId?: string) => void;
+  setAlternativeFlowKind: (useCaseId: string, altId: string, kind: "alternative" | "exception") => void;
 }
 
 const initialData = localStorageProjectAdapter.load();
@@ -204,7 +205,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     return { useCases };
   }),
 
-  addAlternativeFlow: (useCaseId, name) => set((s) => {
+  addAlternativeFlow: (useCaseId: string, name: string, kind: "alternative" | "exception", parentPhraseId: string, returnPhraseId?: string) => set((s) => {
     const useCases = s.useCases.map((u) =>
       u.id !== useCaseId
         ? u
@@ -212,7 +213,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
             ...u,
             alternativeFlows: [
               ...(u.alternativeFlows ?? []),
-              { id: crypto.randomUUID?.() ?? `af-${Date.now()}`, name, flows: [] },
+              { id: crypto.randomUUID?.() ?? `af-${Date.now()}`, useCaseId, parentPhraseId, returnPhraseId, kind, name, flows: [] },
             ],
           }
     );
@@ -295,4 +296,17 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       localStorageProjectAdapter.save({ ...get(), useCases });
       return { useCases };
     }),
-}));
+  setAlternativeFlowKind: (useCaseId: string, altId: string, kind: "alternative" | "exception") =>
+    set((s) => {
+      const useCases = s.useCases.map((u) => {
+        if (u.id !== useCaseId) return u;
+        const alternativeFlows = (u.alternativeFlows ?? []).map((af) =>
+          af.id === altId ? { ...af, kind } : af
+        );
+        return { ...u, alternativeFlows };
+      });
+      localStorageProjectAdapter.save({ ...get(), useCases });
+      return { useCases };
+    }),
+  }),
+);

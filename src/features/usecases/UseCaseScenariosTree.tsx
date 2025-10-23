@@ -1,5 +1,5 @@
 // src/features/usecases/UseCaseScenariosTree.tsx
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useProjectStore } from '@/store/use-project.store';
 import clsx from "clsx";
 
@@ -21,6 +21,7 @@ export default function UseCaseScenariosTree({ useCaseId }: { useCaseId: string 
   const addAltStep = useProjectStore((s) => s.addAlternativeFlowStep);
   const editAltStep = useProjectStore((s) => s.editAlternativeFlowStep);
   const removeAltStep = useProjectStore((s) => s.removeAlternativeFlowStep);
+  const setAlternativeFlowKind = useProjectStore((s) => s.setAlternativeFlowKind);
 
   const [newPhraseText, setNewPhraseText] = useState('');
 
@@ -34,6 +35,7 @@ export default function UseCaseScenariosTree({ useCaseId }: { useCaseId: string 
     });
     return map;
   }, [uc]);
+  console.log(altByParent)
 
   return (
     <div className="space-y-3 text-[13px]">
@@ -90,7 +92,7 @@ export default function UseCaseScenariosTree({ useCaseId }: { useCaseId: string 
                     if (!n) return;
                     // NOTE: if your addAlternativeFlow signature is (useCaseId, name),
                     // keep as below; if you extended to include parent, swap to (uc.id, p.id, n, 'alternative')
-                    addAlt(uc.id, n);
+                    addAlt(uc.id, n, "alternative", p.id, undefined);
                   }}
                 />
                 {(altByParent[p.id] ?? []).map((af) => (
@@ -105,6 +107,7 @@ export default function UseCaseScenariosTree({ useCaseId }: { useCaseId: string 
                     addAltStep={addAltStep}
                     editAltStep={editAltStep}
                     removeAltStep={removeAltStep}
+                    setAlternativeFlowKind={setAlternativeFlowKind}
                   />
                 ))}
                 {(!altByParent[p.id] || altByParent[p.id]!.length === 0) && (
@@ -133,7 +136,7 @@ function EditableInline({
       {(!editing ? <span
         className={`truncate max-w-min w-min ${className || ''}`}
         title={value}
-        onClick={() => setEditing(true)}
+        onClick={(e) => {setEditing(true); e.preventDefault()}}
       >
         {value || <span className="text-gray-400 italic">Sem texto</span>}
       </span> : <input
@@ -208,6 +211,7 @@ function AltCard(props: {
   renameAlt: (useCaseId: string, altId: string, name: string) => void;
   removeAlt: (useCaseId: string, altId: string) => void;
   setAltReturn: (useCaseId: string, altId: string, returnPhraseId?: string) => void;
+  setAlternativeFlowKind: (useCaseId: string, altId: string, kind: "alternative" | "exception") => void;
   addAltStep: (useCaseId: string, altId: string, t: string) => void;
   editAltStep: (useCaseId: string, altId: string, i: number, t: string) => void;
   removeAltStep: (useCaseId: string, altId: string, i: number) => void;
@@ -219,38 +223,25 @@ function AltCard(props: {
   const [ret, setRet] = useState<string>(alt.returnPhraseId || '');
   const [newStep, setNewStep] = useState('');
 
+  // Apply name changes
+  useEffect(() => {
+    props.renameAlt(ucId, alt.id, name);
+  }, [name]);
+
+  // Apply kind changes
+  useEffect(() => {
+    props.setAlternativeFlowKind(ucId, alt.id, kind);
+  }, [kind]);
+
+  // Apply returnToPhraseId changes
+  useEffect(() => {
+    props.setAltReturn(ucId, alt.id, ret);
+  }, [ret]);
+
   return (
     <div className="border rounded p-2">
       <div className="flex flex-wrap items-center gap-2">
-        {editing ? (
-          <>
-            <input
-              className="border px-2 py-1 rounded text-sm"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              autoFocus
-            />
-            <button
-              className="text-xs px-2 py-1 border rounded"
-              onClick={() => {
-                const t = name.trim();
-                if (!t) return setEditing(false);
-                props.renameAlt(ucId, alt.id, t);
-                setEditing(false);
-              }}
-            >
-              OK
-            </button>
-            <button className="text-xs px-2 py-1 border rounded" onClick={() => { setName(alt.name); setEditing(false); }}>
-              Cancel
-            </button>
-          </>
-        ) : (
-          <>
-            <strong className="truncate max-w-[14rem]" title={alt.name}>{alt.name || 'Fluxo Alternativo'}</strong>
-            <button className="text-xs underline" onClick={() => setEditing(true)}>Renomear</button>
-          </>
-        )}
+        <EditableInline onSave={(e: string) => setName(e)} value={name} />
 
         <span className="text-gray-300 mx-1">|</span>
 
@@ -258,7 +249,9 @@ function AltCard(props: {
         <select
           className="border px-2 py-1 rounded text-xs"
           value={kind}
-          onChange={(e) => setKind(e.target.value as Kind)}
+          onChange={(e) => {
+            setKind(e.target.value as Kind);
+          }}
           // TODO: persist kind (add a store action if you want to save it)
         >
           <option value="alternative">Alternative</option>
@@ -272,9 +265,7 @@ function AltCard(props: {
           className="border px-2 py-1 rounded text-xs"
           value={ret}
           onChange={(e) => {
-            const v = e.target.value || undefined;
             setRet(e.target.value);
-            props.setAltReturn(ucId, alt.id, v);
           }}
         >
           <option value="">(termina)</option>
